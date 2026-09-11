@@ -1,0 +1,360 @@
+{% extends 'layout.html' %}
+
+{% block title %}elo{% endblock %}
+
+{% block content %}
+
+<form method="post" id="generate-form" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+
+```
+<!-- ==================== FILES ==================== -->
+<div class="mb-4">
+    <h3>Input files</h3>
+
+    <div class="upload-body">
+        <div class="file-input-wrapper">
+
+            {% if form.images_field.errors %}
+                {{ form.images_field(
+                    class='form-control form-control-lg is-invalid',
+                    multiple=True,
+                    id='fileInput'
+                ) }}
+
+                {% for error in form.images_field.errors %}
+                    <div class="text-danger mt-2">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            {% else %}
+                {{ form.images_field(
+                    class='form-control form-control-lg',
+                    multiple=True,
+                    id='fileInput'
+                ) }}
+            {% endif %}
+
+            <div class="file-hint">
+                <span>💡</span>
+                Supported formats: JPG, PNG, JPEG
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ==================== GENERAL OPTIONS ==================== -->
+<div class="mb-4">
+    <h3>General options</h3>
+
+    <div class="mb-3">
+        {{ form.filter_lt_px_field.label(class="form-label") }}
+
+        {{ form.filter_lt_px_field(
+            class="form-control" +
+            (" is-invalid" if form.filter_lt_px_field.errors else "")
+        ) }}
+
+        {% for error in form.filter_lt_px_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.models_list_field.label(class="form-label") }}
+
+        {{ form.models_list_field(
+            class="form-select" +
+            (" is-invalid" if form.models_list_field.errors else "")
+        ) }}
+
+        {% for error in form.models_list_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<!-- ==================== YOLO LEAF ==================== -->
+<div class="mb-4">
+    <h3>YOLO Leaf model</h3>
+
+    <div class="mb-3">
+        {{ form.yolo_conf_thr_leaf_field.label(class="form-label") }}
+
+        {{ form.yolo_conf_thr_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.yolo_conf_thr_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.yolo_conf_thr_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.yolo_iou_leaf_field.label(class="form-label") }}
+
+        {{ form.yolo_iou_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.yolo_iou_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.yolo_iou_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<!-- ==================== SAHI LEAF ==================== -->
+<div class="mb-4">
+    <h3>SAHI Leaf model</h3>
+
+    <div class="form-check mb-3">
+        {{ form.use_sahi_leaf_field(
+            class="form-check-input"
+        ) }}
+
+        {{ form.use_sahi_leaf_field.label(
+            class="form-check-label"
+        ) }}
+
+        {% for error in form.use_sahi_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_conf_thr_leaf_field.label(class="form-label") }}
+
+        {{ form.sahi_conf_thr_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_conf_thr_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_conf_thr_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_slice_height_leaf_field.label(class="form-label") }}
+
+        {{ form.sahi_slice_height_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_slice_height_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_slice_height_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_slice_width_leaf_field.label(class="form-label") }}
+
+        {{ form.sahi_slice_width_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_slice_width_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_slice_width_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_overlap_height_ratio_leaf_field.label(class="form-label") }}
+
+        {{ form.sahi_overlap_height_ratio_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_overlap_height_ratio_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_overlap_height_ratio_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_overlap_width_ratio_leaf_field.label(class="form-label") }}
+
+        {{ form.sahi_overlap_width_ratio_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_overlap_width_ratio_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_overlap_width_ratio_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_match_thr_leaf_field.label(class="form-label") }}
+
+        {{ form.sahi_match_thr_leaf_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_match_thr_leaf_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_match_thr_leaf_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<!-- ==================== YOLO DISEASE ==================== -->
+<div class="mb-4">
+    <h3>YOLO Disease model</h3>
+
+    <div class="mb-3">
+        {{ form.yolo_conf_thr_dis_field.label(class="form-label") }}
+
+        {{ form.yolo_conf_thr_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.yolo_conf_thr_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.yolo_conf_thr_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.yolo_iou_dis_field.label(class="form-label") }}
+
+        {{ form.yolo_iou_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.yolo_iou_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.yolo_iou_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<!-- ==================== SAHI DISEASE ==================== -->
+<div class="mb-4">
+    <h3>SAHI Disease model</h3>
+
+    <div class="form-check mb-3">
+        {{ form.use_sahi_dis_field(
+            class="form-check-input"
+        ) }}
+
+        {{ form.use_sahi_dis_field.label(
+            class="form-check-label"
+        ) }}
+
+        {% for error in form.use_sahi_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_conf_thr_dis_field.label(class="form-label") }}
+
+        {{ form.sahi_conf_thr_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_conf_thr_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_conf_thr_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_slice_height_dis_field.label(class="form-label") }}
+
+        {{ form.sahi_slice_height_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_slice_height_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_slice_height_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_slice_width_dis_field.label(class="form-label") }}
+
+        {{ form.sahi_slice_width_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_slice_width_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_slice_width_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_overlap_height_ratio_dis_field.label(class="form-label") }}
+
+        {{ form.sahi_overlap_height_ratio_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_overlap_height_ratio_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_overlap_height_ratio_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_overlap_width_ratio_dis_field.label(class="form-label") }}
+
+        {{ form.sahi_overlap_width_ratio_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_overlap_width_ratio_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_overlap_width_ratio_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.sahi_match_thr_dis_field.label(class="form-label") }}
+
+        {{ form.sahi_match_thr_dis_field(
+            class="form-control" +
+            (" is-invalid" if form.sahi_match_thr_dis_field.errors else "")
+        ) }}
+
+        {% for error in form.sahi_match_thr_dis_field.errors %}
+            <div class="text-danger mt-1">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<!-- ==================== SUBMIT ==================== -->
+<div class="mb-4">
+    {{ form.submit_field(
+        value="Generate",
+        class="btn btn-primary btn-lg"
+    ) }}
+</div>
+
+
+</form>
+
+
+{% for data in display_results %}
+    <hr>
+    <img src="{{ url_for('static', filename='temp_uploads/' ~ data['main_img_draw'] ) }}">
+    <br>
+    {% for leaf in data["leafs"] %}
+        <p>{{ leaf['leaf_id'] }}</p>
+        <img src="{{ url_for('static', filename='temp_uploads/' ~ leaf['leaf_img'] ) }}">
+    {% endfor %}
+{% endfor %}
+{% endblock %}
