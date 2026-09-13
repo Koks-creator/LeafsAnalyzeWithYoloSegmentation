@@ -4,11 +4,16 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import asyncio
 import base64
+import json
+from typing import Annotated
 
 import cv2
 import numpy as np
 from fastapi import Depends, File, Form, HTTPException, UploadFile, status
-from pydantic import BaseModel, Field, ValidationError
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from api import (
     DetectionConfig,
@@ -21,33 +26,48 @@ from api import (
 )
 
 ################################### Input Models ###################################
+Prob = Annotated[float, Field(ge=0.0, le=1.0)]
+Channel = Annotated[int, Field(ge=0, le=255)]
 
-class SahiConfigModel(BaseModel):
+
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+class SahiConfigModel(StrictModel):
     use_sahi: bool = False
-    conf: float = 0.1
-    slice_height: int = 240
-    slice_width: int = 240
-    overlap_height_ratio: float = 0.3
-    overlap_width_ratio: float = 0.3
-    match_threshold: float = 0.4
+    conf: Prob = 0.1
+    slice_height: int = Field(240, ge=32, le=4096)
+    slice_width: int = Field(240, ge=32, le=4096)
+    overlap_height_ratio: float = Field(0.3, ge=0.0, lt=1.0)
+    overlap_width_ratio: float = Field(0.3, ge=0.0, lt=1.0)
+    match_threshold: Prob = 0.4
 
+    @model_validator(mode="after")
+    def check_effective_stride(self):
+        if self.use_sahi:
+            stride_h = self.slice_height * (1 - self.overlap_height_ratio)
+            stride_w = self.slice_width * (1 - self.overlap_width_ratio)
+            if min(stride_h, stride_w) < 32:
+                raise ValueError(
+                    "overlap ratios are too high for these slice sizes "
+                    f"(effective stride {stride_h:.0f}x{stride_w:.0f} px, min 32)"
+                )
+        return self
 
-class YoloConfigModel(BaseModel):
-    conf: float = 0.1
-    iou: float = 0.1
-
+class YoloConfigModel(StrictModel):
+    conf: Prob = 0.1
+    iou: Prob = 0.1
 
 class DetectionConfigModel(BaseModel):
     sahi: SahiConfigModel = Field(default_factory=SahiConfigModel)
     yolo: YoloConfigModel = Field(default_factory=YoloConfigModel)
 
-
-class ProcessImageConfigModel(BaseModel):
+class ProcessImageConfigModel(StrictModel):
     model_pair_name: str = "model1"
-    pad: float = 0.06
-    alpha: float = 0.5
-    draw_color: tuple[int, int, int] = (200, 0, 50)
-    filter_lt_px: int = 50000
+    pad: float = Field(0.06, ge=0.0, le=0.5)
+    alpha: float = Field(0.5, ge=0.0, le=1.0)
+    draw_color: tuple[Channel, Channel, Channel] = (200, 0, 50)
+    filter_lt_px: int = Field(50_000, ge=0)
 
     leaf: DetectionConfigModel = Field(default_factory=DetectionConfigModel)
     disease: DetectionConfigModel = Field(default_factory=DetectionConfigModel)
@@ -69,7 +89,7 @@ class SingleImageResponse(BaseModel):
     draw_img: str # bytes
     leafs_data: list[LeafResult]
 
-class Response(BaseModel):
+class FullResponse(BaseModel):
     proc_time: float
     items_len: int
     leafs_data: list[SingleImageResponse]
@@ -79,17 +99,66 @@ class HealthResponse(BaseModel):
 
 ################################### Helper stuff ###################################
 
+def _prefix_loc(errors: list[dict], prefix: tuple) -> list[dict]:
+    out = []
+    for err in errors:
+        err = dict(err)
+        err["loc"] = prefix + tuple(err.get("loc", ()))
+        out.append(err)
+    return out
+
+
 def parse_config(config: str = Form(default="{}")) -> ProcessImageConfigModel:
     try:
-        return ProcessImageConfigModel.model_validate_json(config)
+        parsed = ProcessImageConfigModel.model_validate_json(config)
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=e.errors())
+        # include_context=False -> ctx bywa nieserializowalne (obiekty wyjątków)
+        raise RequestValidationError(
+            _prefix_loc(
+                e.errors(include_url=False, include_context=False),
+                ("body", "config"),
+            )
+        ) from e
+
+    if parsed.model_pair_name not in models:
+        raise RequestValidationError([{
+            "type": "value_error",
+            "loc": ("body", "config", "model_pair_name"),
+            "msg": f"unknown model pair, available: {sorted(models)}",
+            "input": parsed.model_pair_name,
+        }])
+
+    return parsed
 
 def numpy_to_base64(img_np: np.ndarray) -> str:
     _, buf = cv2.imencode(".png", img_np)
 
     return base64.b64encode(buf).decode("utf-8")
 
+
+################################### Handlers ###################################
+@app.exception_handler(RequestValidationError)
+async def on_validation_error(request, exc: RequestValidationError):
+    errors = [
+        {
+            "field": ".".join(str(p) for p in err["loc"] if p != "body") or "body",
+            "message": err["msg"],
+            "type": err["type"],
+            "input": err.get("input"),
+        }
+        for err in exc.errors()
+    ]
+    logger.warning("422 on %s: %s", request.url.path, errors)
+    return JSONResponse(
+        status_code=422,
+        content=jsonable_encoder({
+            "detail": "Request validation failed",
+            "errors": errors,
+        }),
+    )
+
+async def load_images(files: list[UploadFile] = File(...)) -> list[np.ndarray]:
+    ...
 
 ################################### Routes ###################################
 
@@ -101,9 +170,9 @@ async def alive():
 async def health_check():
     return HealthResponse(status="all green")
 
-@app.post("/process/", response_model=Response)
+@app.post("/process/", response_model=FullResponse)
 async def process(
-    files: list[UploadFile] = File(...), # czemu mi to zjebie podkreslasz?
+    files: list[UploadFile] = File(...), # czemu mi to zjebie podkreslasz? depends(load_images)
     config: ProcessImageConfigModel = Depends(parse_config)
 ):  
     logger.info(f"Uploaded: {len(files)} files.")
@@ -130,9 +199,9 @@ async def process(
             images.append(image)
 
         model_pair = config.model_pair_name
-        model = models.get(model_pair)
-        if not model:
-            raise HTTPException(status_code=404, detail=f"No such model: {model_pair}.")
+        model = models[model_pair]
+        # if not model:
+        #     raise HTTPException(status_code=404, detail=f"No such model: {model_pair}.")
 
         logger.info(f"About to process sar with: {model_pair} model.")
         (draw_imgs, results), proc_time = await asyncio.to_thread(model.process_image, images, process_config)
@@ -163,7 +232,7 @@ async def process(
             )
         logger.info(f"Returning {len(processed_data)} results.")
 
-        return Response(
+        return FullResponse(
             proc_time=proc_time,
             items_len=len(draw_imgs),
             leafs_data=processed_data
