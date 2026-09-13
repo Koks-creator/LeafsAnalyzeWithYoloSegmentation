@@ -38,7 +38,8 @@ class Config:
 
     # API
     API_PORT: int = 5000
-    API_HOST: str = "127.0.0.1"
+    API_HOST: str = "http://127.0.0.1"
+    API_HOST_NO_PROT: str = "127.0.0.1"
     MAX_IMAGE_FILES: int = 5
     API_LOG_FILE: str = Path(ROOT_PATH) / "logs" / "api_logs.log"
     # API_MODELS_LIST_PATH: Union[str, os.PathLike, Path] = Path(ROOT_PATH) / "api" / "model_to_load.json"
