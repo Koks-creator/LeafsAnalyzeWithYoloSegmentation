@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from api import (
+    Config,
     DetectionConfig,
     ProcessImageConfig,
     SahiConfig,
@@ -23,7 +24,6 @@ from api import (
     app,
     logger,
     models,
-    Config
 )
 
 ################################### Input Models ###################################
