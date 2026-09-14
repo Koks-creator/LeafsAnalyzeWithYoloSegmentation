@@ -23,6 +23,7 @@ from api import (
     app,
     logger,
     models,
+    Config
 )
 
 ################################### Input Models ###################################
@@ -73,7 +74,6 @@ class ProcessImageConfigModel(StrictModel):
     disease: DetectionConfigModel = Field(default_factory=DetectionConfigModel)
 
 ################################### Responses ###################################
-
 class LeafResult(BaseModel):
     leaf_id: int
     class_name: str
@@ -97,7 +97,11 @@ class FullResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
 
-################################### Helper stuff ###################################
+################################### Helper stuff/validation shit ###################################
+def numpy_to_base64(img_np: np.ndarray) -> str:
+    _, buf = cv2.imencode(".png", img_np)
+
+    return base64.b64encode(buf).decode("utf-8")
 
 def _prefix_loc(errors: list[dict], prefix: tuple) -> list[dict]:
     out = []
@@ -106,7 +110,6 @@ def _prefix_loc(errors: list[dict], prefix: tuple) -> list[dict]:
         err["loc"] = prefix + tuple(err.get("loc", ()))
         out.append(err)
     return out
-
 
 def parse_config(config: str = Form(default="{}")) -> ProcessImageConfigModel:
     try:
@@ -130,11 +133,36 @@ def parse_config(config: str = Form(default="{}")) -> ProcessImageConfigModel:
 
     return parsed
 
-def numpy_to_base64(img_np: np.ndarray) -> str:
-    _, buf = cv2.imencode(".png", img_np)
+def _file_error(idx: int, msg: str, value):
+    return RequestValidationError([{
+        "type": "value_error",
+        "loc": ("body", "files", idx),
+        "msg": msg,
+        "input": value,
+    }])
 
-    return base64.b64encode(buf).decode("utf-8")
+async def load_images(files: list[UploadFile] = File(...)) -> list[np.ndarray]:
+    if not files:
+        raise _file_error(0, "at least one file is required", None)
+    if len(files) > Config.API_MAX_FILE_NUMBER:
+        raise _file_error(0, f"too many files, max is {Config.API_MAX_FILE_NUMBER}", None)
 
+    images = []
+    for idx, file in enumerate(files):
+        if file.content_type not in Config.API_ALLOWED_EXTENSIONS:
+            raise _file_error(idx, f"unsupported content type, allowed: {sorted(Config.API_ALLOWED_EXTENSIONS)}", file.content_type)
+
+        content = await file.read()
+        if len(content) > Config.API_MAX_FILE_BYTES:
+            raise _file_error(idx, f"File is too large, max {Config.API_MAX_FILE_BYTES // 1024 // 1024} MB", file.filename)
+
+        img = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_COLOR)
+        if img is None:
+            raise _file_error(idx, "file is not a decodable image", file.filename)
+        
+        images.append(img)
+
+    return images
 
 ################################### Handlers ###################################
 @app.exception_handler(RequestValidationError)
@@ -157,11 +185,7 @@ async def on_validation_error(request, exc: RequestValidationError):
         }),
     )
 
-async def load_images(files: list[UploadFile] = File(...)) -> list[np.ndarray]:
-    ...
-
 ################################### Routes ###################################
-
 @app.get("/")
 async def alive():
     return "Hello, I'm alive :) https://www.youtube.com/watch?v=9DeG5WQClUI"
@@ -172,10 +196,10 @@ async def health_check():
 
 @app.post("/process/", response_model=FullResponse)
 async def process(
-    files: list[UploadFile] = File(...), # czemu mi to zjebie podkreslasz? depends(load_images)
+    images: list[np.ndarray] = Depends(load_images), # czemu mi to zjebie podkreslasz?
     config: ProcessImageConfigModel = Depends(parse_config)
 ):  
-    logger.info(f"Uploaded: {len(files)} files.")
+    logger.info(f"Uploaded: {len(images)} files.")
     try:
         process_config = ProcessImageConfig(
             pad=config.pad,
@@ -191,17 +215,9 @@ async def process(
                 yolo=YoloConfig(**config.disease.yolo.model_dump()),
             ),
         )
-        images = []
-        for file in files:
-            content = await file.read()
-            nparr = np.frombuffer(content, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            images.append(image)
 
         model_pair = config.model_pair_name
         model = models[model_pair]
-        # if not model:
-        #     raise HTTPException(status_code=404, detail=f"No such model: {model_pair}.")
 
         logger.info(f"About to process sar with: {model_pair} model.")
         (draw_imgs, results), proc_time = await asyncio.to_thread(model.process_image, images, process_config)
