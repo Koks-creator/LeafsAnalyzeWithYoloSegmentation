@@ -1,7 +1,6 @@
 import logging
 from pathlib import Path
 
-#  $env:DATA_UPLOAD_MAX_NUMBER_FILES="10000" 
 
 class Config:
     # Overall
@@ -45,6 +44,10 @@ class Config:
     # API_MODELS_LIST_PATH: Union[str, os.PathLike, Path] = Path(ROOT_PATH) / "api" / "model_to_load.json"
     API_MODEL_MIN_GEN_LEN: int = 1
     API_MODEL_MAX_GEN_LEN: int = 32
+    API_MAX_FILE_NUMBER: int = 5
+    API_MAX_FILE_BYTES: int = 25 * 1024 * 1024
+    API_ALLOWED_EXTENSIONS: tuple[str] = ("image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp")
+
 
     # WEB APP
     WEB_APP_PORT: int = 8000
