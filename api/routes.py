@@ -176,7 +176,7 @@ async def on_validation_error(request, exc: RequestValidationError):
         }
         for err in exc.errors()
     ]
-    logger.warning("422 on %s: %s", request.url.path, errors)
+    logger.warning(f"422 on {request.url.path}: {errors}")
     return JSONResponse(
         status_code=422,
         content=jsonable_encoder({
