@@ -1,360 +1,224 @@
 {% extends 'layout.html' %}
 
-{% block title %}elo{% endblock %}
+{% block title %}Leaf Disease Detector{% endblock %}
 
 {% block content %}
+{% import '_macros.html' as m %}
 
-<form method="post" id="generate-form" enctype="multipart/form-data" novalidate>
+<div class="page-intro">
+    <h1>Detect leaf disease</h1>
+    <p>Upload plant photos and pick a model pair. The default detection settings work for most photos, so you only need to open them when results look off.</p>
+</div>
+
+<form method="post" id="generate-form" class="gen-form" enctype="multipart/form-data" novalidate>
     {{ form.hidden_tag() }}
 
-```
-<!-- ==================== FILES ==================== -->
-<div class="mb-4">
-    <h3>Input files</h3>
-
-    <div class="upload-body">
-        <div class="file-input-wrapper">
-
-            {% if form.images_field.errors %}
-                {{ form.images_field(
-                    class='form-control form-control-lg is-invalid',
-                    multiple=True,
-                    id='fileInput'
-                ) }}
-
-                {% for error in form.images_field.errors %}
-                    <div class="text-danger mt-2">
-                        {{ error }}
-                    </div>
-                {% endfor %}
-            {% else %}
-                {{ form.images_field(
-                    class='form-control form-control-lg',
-                    multiple=True,
-                    id='fileInput'
-                ) }}
-            {% endif %}
-
-            <div class="file-hint">
-                <span>💡</span>
-                Supported formats: JPG, PNG, JPEG
-            </div>
+    <!-- ==================== IMAGES + GENERAL ==================== -->
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Images</h2>
+            <span class="panel-hint">JPG or PNG, one or more</span>
         </div>
-    </div>
-</div>
 
-
-<!-- ==================== GENERAL OPTIONS ==================== -->
-<div class="mb-4">
-    <h3>General options</h3>
-
-    <div class="mb-3">
-        {{ form.filter_lt_px_field.label(class="form-label") }}
-
-        {{ form.filter_lt_px_field(
-            class="form-control" +
-            (" is-invalid" if form.filter_lt_px_field.errors else "")
-        ) }}
-
-        {% for error in form.filter_lt_px_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
+        <div class="dropzone{% if form.images_field.errors %} has-error{% endif %}">
+            {{ form.images_field(
+                class="form-control" ~ (" is-invalid" if form.images_field.errors else ""),
+                multiple=True,
+                id="fileInput",
+                accept=".jpg,.jpeg,.png"
+            ) }}
+            <p class="dropzone-hint" id="fileSummary">No photos selected yet.</p>
+        </div>
+        {% for error in form.images_field.errors %}
+            <div class="field-error">{{ error }}</div>
         {% endfor %}
-    </div>
 
-    <div class="mb-3">
-        {{ form.models_list_field.label(class="form-label") }}
-
-        {{ form.models_list_field(
-            class="form-select" +
-            (" is-invalid" if form.models_list_field.errors else "")
-        ) }}
-
-        {% for error in form.models_list_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-</div>
-
-
-<!-- ==================== YOLO LEAF ==================== -->
-<div class="mb-4">
-    <h3>YOLO Leaf model</h3>
-
-    <div class="mb-3">
-        {{ form.yolo_conf_thr_leaf_field.label(class="form-label") }}
-
-        {{ form.yolo_conf_thr_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.yolo_conf_thr_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.yolo_conf_thr_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.yolo_iou_leaf_field.label(class="form-label") }}
-
-        {{ form.yolo_iou_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.yolo_iou_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.yolo_iou_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-</div>
-
-
-<!-- ==================== SAHI LEAF ==================== -->
-<div class="mb-4">
-    <h3>SAHI Leaf model</h3>
-
-    <div class="form-check mb-3">
-        {{ form.use_sahi_leaf_field(
-            class="form-check-input"
-        ) }}
-
-        {{ form.use_sahi_leaf_field.label(
-            class="form-check-label"
-        ) }}
-
-        {% for error in form.use_sahi_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_conf_thr_leaf_field.label(class="form-label") }}
-
-        {{ form.sahi_conf_thr_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_conf_thr_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_conf_thr_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_slice_height_leaf_field.label(class="form-label") }}
-
-        {{ form.sahi_slice_height_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_slice_height_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_slice_height_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_slice_width_leaf_field.label(class="form-label") }}
-
-        {{ form.sahi_slice_width_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_slice_width_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_slice_width_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_overlap_height_ratio_leaf_field.label(class="form-label") }}
-
-        {{ form.sahi_overlap_height_ratio_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_overlap_height_ratio_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_overlap_height_ratio_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_overlap_width_ratio_leaf_field.label(class="form-label") }}
-
-        {{ form.sahi_overlap_width_ratio_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_overlap_width_ratio_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_overlap_width_ratio_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_match_thr_leaf_field.label(class="form-label") }}
-
-        {{ form.sahi_match_thr_leaf_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_match_thr_leaf_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_match_thr_leaf_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-</div>
-
-
-<!-- ==================== YOLO DISEASE ==================== -->
-<div class="mb-4">
-    <h3>YOLO Disease model</h3>
-
-    <div class="mb-3">
-        {{ form.yolo_conf_thr_dis_field.label(class="form-label") }}
-
-        {{ form.yolo_conf_thr_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.yolo_conf_thr_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.yolo_conf_thr_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.yolo_iou_dis_field.label(class="form-label") }}
-
-        {{ form.yolo_iou_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.yolo_iou_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.yolo_iou_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-</div>
-
-
-<!-- ==================== SAHI DISEASE ==================== -->
-<div class="mb-4">
-    <h3>SAHI Disease model</h3>
-
-    <div class="form-check mb-3">
-        {{ form.use_sahi_dis_field(
-            class="form-check-input"
-        ) }}
-
-        {{ form.use_sahi_dis_field.label(
-            class="form-check-label"
-        ) }}
-
-        {% for error in form.use_sahi_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_conf_thr_dis_field.label(class="form-label") }}
-
-        {{ form.sahi_conf_thr_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_conf_thr_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_conf_thr_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_slice_height_dis_field.label(class="form-label") }}
-
-        {{ form.sahi_slice_height_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_slice_height_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_slice_height_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_slice_width_dis_field.label(class="form-label") }}
-
-        {{ form.sahi_slice_width_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_slice_width_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_slice_width_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_overlap_height_ratio_dis_field.label(class="form-label") }}
-
-        {{ form.sahi_overlap_height_ratio_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_overlap_height_ratio_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_overlap_height_ratio_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_overlap_width_ratio_dis_field.label(class="form-label") }}
-
-        {{ form.sahi_overlap_width_ratio_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_overlap_width_ratio_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_overlap_width_ratio_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-
-    <div class="mb-3">
-        {{ form.sahi_match_thr_dis_field.label(class="form-label") }}
-
-        {{ form.sahi_match_thr_dis_field(
-            class="form-control" +
-            (" is-invalid" if form.sahi_match_thr_dis_field.errors else "")
-        ) }}
-
-        {% for error in form.sahi_match_thr_dis_field.errors %}
-            <div class="text-danger mt-1">{{ error }}</div>
-        {% endfor %}
-    </div>
-</div>
-
-
-<!-- ==================== SUBMIT ==================== -->
-<div class="mb-4">
-    {{ form.submit_field(
-        value="Generate",
-        class="btn btn-primary btn-lg"
+        <div class="field-grid general-fields">
+            {{ m.field(form.models_list_field, "form-select") }}
+            {{ m.field(form.filter_lt_px_field) }}
+        </div>
+    </section>
+
+    <!-- ==================== LEAF MODEL ==================== -->
+    {{ m.settings_group(
+        "Leaf detection",
+        "Finds each leaf in the photo",
+        "leaf",
+        [form.yolo_conf_thr_leaf_field, form.yolo_iou_leaf_field],
+        form.use_sahi_leaf_field,
+        [
+            form.sahi_conf_thr_leaf_field,
+            form.sahi_slice_height_leaf_field,
+            form.sahi_slice_width_leaf_field,
+            form.sahi_overlap_height_ratio_leaf_field,
+            form.sahi_overlap_width_ratio_leaf_field,
+            form.sahi_match_thr_leaf_field
+        ]
     ) }}
-</div>
 
+    <!-- ==================== DISEASE MODEL ==================== -->
+    {{ m.settings_group(
+        "Disease detection",
+        "Finds diseased spots on each leaf",
+        "disease",
+        [form.yolo_conf_thr_dis_field, form.yolo_iou_dis_field],
+        form.use_sahi_dis_field,
+        [
+            form.sahi_conf_thr_dis_field,
+            form.sahi_slice_height_dis_field,
+            form.sahi_slice_width_dis_field,
+            form.sahi_overlap_height_ratio_dis_field,
+            form.sahi_overlap_width_ratio_dis_field,
+            form.sahi_match_thr_dis_field
+        ]
+    ) }}
 
+    <!-- ==================== SUBMIT ==================== -->
+    <div class="submit-bar">
+        {{ form.submit_field(value="Analyze images", class="btn btn-primary btn-lg", id="submitBtn") }}
+        <span class="submit-status" id="submitStatus" hidden>
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            Analyzing images, this can take a while
+        </span>
+    </div>
 </form>
 
 
-{% for data in display_results %}
-    <hr>
-    <img src="{{ url_for('static', filename='temp_uploads/' ~ data['main_img_draw'] ) }}">
-    <br>
-    {% for leaf in data["leafs"] %}
-        <p>{{ leaf['leaf_id'] }}</p>
-        <img src="{{ url_for('static', filename='temp_uploads/' ~ leaf['leaf_img'] ) }}">
-    {% endfor %}
-{% endfor %}
+<!-- ==================== RESULTS ==================== -->
+{% if display_results %}
+    {% set ns = namespace(leaves=0) %}
+    {% for data in display_results %}{% set ns.leaves = ns.leaves + data.leafs|length %}{% endfor %}
+
+    <section class="results" id="results">
+        <div class="results-head">
+            <h2>Results</h2>
+            <p>
+                {{ display_results|length }} {{ 'image' if display_results|length == 1 else 'images' }},
+                {{ ns.leaves }} {{ 'leaf' if ns.leaves == 1 else 'leaves' }} found
+            </p>
+        </div>
+
+        {% for data in display_results %}
+            {% set main_url = url_for('static', filename='temp_uploads/' ~ data['main_img_draw']) %}
+
+            <article class="panel result">
+                <header class="result-head">
+                    <h3>Image {{ loop.index }}</h3>
+                    <span>{{ data.leafs|length }} {{ 'leaf' if data.leafs|length == 1 else 'leaves' }}</span>
+                </header>
+
+                <a class="result-main" href="{{ main_url }}" target="_blank" rel="noopener">
+                    <img src="{{ main_url }}" alt="Image {{ loop.index }} with detected leaves and disease marked">
+                </a>
+
+                {% if data.leafs %}
+                    <div class="leaf-grid">
+                        {% for leaf in data.leafs %}
+                            {% set leaf_url = url_for('static', filename='temp_uploads/' ~ leaf['leaf_img']) %}
+                            {% set perc = leaf.diseased_area_perc if leaf.diseased_area_perc is number else 0 %}
+                            {% set bar = [[perc, 100]|min, 0]|max %}
+                            {% set healthy = 'healthy' in (leaf.class_name|string|lower) %}
+
+                            <div class="leaf-card">
+                                <a class="leaf-thumb" href="{{ leaf_url }}" target="_blank" rel="noopener">
+                                    <img src="{{ leaf_url }}" alt="Leaf {{ leaf.leaf_id }}" loading="lazy">
+                                </a>
+
+                                <div class="leaf-body">
+                                    <div class="leaf-top">
+                                        <span class="leaf-id">Leaf {{ leaf.leaf_id }}</span>
+                                        <span class="leaf-class {{ 'is-healthy' if healthy else 'is-diseased' }}">
+                                            {{ leaf.class_name }}
+                                        </span>
+                                    </div>
+
+                                    <div class="leaf-area">
+                                        <div class="leaf-area-row">
+                                            <span>Diseased area</span>
+                                            <span class="num">{{ '%.1f'|format(perc) }}%</span>
+                                        </div>
+                                        <div class="bar"><div class="bar-fill" style="width: {{ bar }}%"></div></div>
+                                    </div>
+
+                                    <dl class="leaf-stats">
+                                        <div>
+                                            <dt>Confidence</dt>
+                                            <dd class="num">{{ '%.2f'|format(leaf.conf) if leaf.conf is number else leaf.conf }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Spots</dt>
+                                            <dd class="num">{{ leaf.n_detected }}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="result-empty">No leaves were detected in this image. Try lowering the leaf confidence threshold.</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </section>
+{% endif %}
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+(() => {
+    // --- lista wybranych plików ---
+    const input = document.getElementById('fileInput');
+    const summary = document.getElementById('fileSummary');
+    if (input && summary) {
+        const initial = summary.textContent;
+        input.addEventListener('change', () => {
+            const names = [...input.files].map(f => f.name);
+            if (names.length === 0) summary.textContent = initial;
+            else if (names.length === 1) summary.textContent = names[0];
+            else summary.textContent = `${names.length} photos: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`;
+        });
+    }
+
+    // --- przyciemnianie pól SAHI, gdy SAHI wyłączone ---
+    document.querySelectorAll('[data-sahi-toggle]').forEach(group => {
+        const toggle = document.getElementById(group.dataset.sahiToggle);
+        if (!toggle) return;
+        const sync = () => group.classList.toggle('is-off', !toggle.checked);
+        toggle.addEventListener('change', sync);
+        sync();
+    });
+
+    // --- stan ładowania + blokada podwójnego wysłania ---
+    const form = document.getElementById('generate-form');
+    const btn = document.getElementById('submitBtn');
+    const status = document.getElementById('submitStatus');
+    const btnLabel = btn ? btn.value : '';
+    let sending = false;
+
+    form?.addEventListener('submit', e => {
+        if (sending) { e.preventDefault(); return; }
+        sending = true;
+        form.classList.add('is-loading');
+        if (btn) { btn.value = 'Analyzing…'; btn.setAttribute('aria-disabled', 'true'); }
+        if (status) status.hidden = false;
+    });
+
+    // powrót przyciskiem "wstecz" – reset stanu
+    window.addEventListener('pageshow', e => {
+        if (!e.persisted) return;
+        sending = false;
+        form?.classList.remove('is-loading');
+        if (btn) { btn.value = btnLabel; btn.removeAttribute('aria-disabled'); }
+        if (status) status.hidden = true;
+    });
+
+    // --- po analizie przewiń do wyników ---
+    const results = document.getElementById('results');
+    if (results) {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        results.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }
+})();
+</script>
 {% endblock %}
