@@ -40,18 +40,18 @@ try:
     logger.info("Loading models")
     models = {
         "model_s": LeafsDiseaseAnalyzer(
-            leafs_model_path=Config.YOLO_LEAFS_MODEL_FOLDER / Config.YOLO_LEAFS_MODEL_NAME,
-            disease_model_path=Config.YOLO_DISEASE_MODEL_FOLDER / Config.YOLO_DISEASE_MODEL_NAME,
+            leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_s_1" / "best.pt",
+            disease_model_path=Config.YOLO_MODELS_FOLDER_PATH / "disease_model_s_1" / "best.pt",
             device=Config.YOLO_DEVICE
         ),
         "model_m": LeafsDiseaseAnalyzer(
-                leafs_model_path=Config.YOLO_LEAFS_MODEL_FOLDER_MEDIUM / Config.YOLO_LEAFS_MODEL_NAME,
-                disease_model_path=Config.YOLO_DISEASE_MODEL_FOLDER_MEDIUM / Config.YOLO_DISEASE_MODEL_NAME,
+                leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_m_1" / "best.pt",
+                disease_model_path=Config.YOLO_MODELS_FOLDER_PATH / "disease_model_s_1" / "best.pt",
                 device=Config.YOLO_DEVICE
             ),
         "model_s2": LeafsDiseaseAnalyzer(
-            leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_s_1" / Config.YOLO_LEAFS_MODEL_NAME,
-            disease_model_path=Config.YOLO_DISEASE_MODEL_FOLDER_MEDIUM / Config.YOLO_DISEASE_MODEL_NAME,
+            leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_s_1" / "best.pt",
+            disease_model_path=Config.YOLO_MODELS_FOLDER_PATH / "disease_model_s_2" / "best.pt",
             device=Config.YOLO_DEVICE
         )
     }
