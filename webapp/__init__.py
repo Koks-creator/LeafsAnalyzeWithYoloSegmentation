@@ -55,8 +55,8 @@ def create_app() -> tuple[Flask]:
 
 app = create_app()
 try:
-    app.logger.info(f"Checking api connection: http://{Config.API_HOST}:{Config.API_PORT}/health")
-    req = requests.get(f"http://{Config.API_HOST}:{Config.API_PORT}/health")
+    app.logger.info(f"Checking api connection: {Config.API_HOST}:{Config.API_PORT}/health")
+    req = requests.get(f"{Config.API_HOST}:{Config.API_PORT}/health")
     if req.json()["status"] != "all green":
         app.logger.error(f"Error when checking api status: {req.json()['status']}")
     else:
