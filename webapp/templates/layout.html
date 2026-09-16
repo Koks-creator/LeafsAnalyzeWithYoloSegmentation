@@ -3,27 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Face Generator{% endblock %}</title>
+    <title>{% block title %}Leaf Disease Detector{% endblock %}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 
-    
+    <!-- własny CSS – po bootstrapie, żeby go nadpisywał -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+
     {% block head_extra %}{% endblock %}
 </head>
 <body>
 
+    <header class="app-header">
+        <div class="container app-header-inner">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand-mark" aria-hidden="true"></span>
+                Leaf Disease Detector
+            </a>
+
+            <div class="api-status" role="status" aria-live="polite">
+                <span id="api-dot" class="api-dot"></span>
+                <span id="api-status-text">Checking API…</span>
+            </div>
+        </div>
+    </header>
+
     <main class="container py-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="row justify-content-center mb-3">
-                    <div class="col-lg-8 col-xl-7">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    </div>
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
                 </div>
             {% endif %}
         {% endwith %}
@@ -32,18 +46,26 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- <script>
-        // live API status
-        fetch('/health').then(r => r.json()).then(d => {
+    <script>
+        // live API status – sprawdzane od razu i potem co 30 s
+        function checkApi() {
             const dot = document.getElementById('api-dot');
             const txt = document.getElementById('api-status-text');
-            if (d.status) { dot.classList.add('ok'); txt.textContent = 'API online'; }
-            else          { dot.classList.add('fail'); txt.textContent = 'API offline'; }
-        }).catch(() => {
-            document.getElementById('api-dot').classList.add('fail');
-            document.getElementById('api-status-text').textContent = 'API offline';
-        });
-    </script> -->
+            if (!dot || !txt) return;
+
+            fetch('/health', { cache: 'no-store' }).then(r => r.json()).then(d => {
+                dot.classList.remove('ok', 'fail');
+                if (d.status) { dot.classList.add('ok'); txt.textContent = 'API online'; }
+                else          { dot.classList.add('fail'); txt.textContent = 'API offline'; }
+            }).catch(() => {
+                dot.classList.remove('ok');
+                dot.classList.add('fail');
+                txt.textContent = 'API offline';
+            });
+        }
+        checkApi();
+        setInterval(checkApi, 30000);
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
