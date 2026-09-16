@@ -1,106 +1,63 @@
-import os
-import sys
-from logging import Logger, getLogger
+import logging
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from config import Config
-from custom_logger import CustomLogger
-from fastapi import FastAPI
-from leaf_disease_analyzer import (
-    DetectionConfig,
-    LeafsDiseaseAnalyzer,
-    ProcessImageConfig,
-    SahiConfig,
-    YoloConfig,
-)
+class Config:
+    # Overall
+    ROOT_PATH: str = Path(__file__).resolve().parent # maybe set static path sar
 
-try:
-    def setup_logging() -> Logger:
-        """Configure logging for the api"""
-        log_dir = os.path.dirname(Config.API_LOG_FILE)
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+    # Folders
+    VIDEOS_FOLDER: Path =  ROOT_PATH / "videos"
+    IMAGES_FOLDER: Path =  ROOT_PATH / "images"
 
-        logger = CustomLogger(
-            logger_name="middleware_logger",
-            logger_log_level=Config.CLI_LOG_LEVEL,
-            file_handler_log_level=Config.FILE_LOG_LEVEL,
-            log_file_name=Config.API_LOG_FILE
-        ).create_logger()
+    # SAHI MODEL PARAMS
+    USE_SAHI: bool = False
+    SAHI_CONF_THRESH: float = .2
+    SAHI_SLICE_HEIGHT: int = 480
+    SAHI_SLICE_WIDTH: int = 480
+    SAHI_OVERLAP_HEIGHT_RATIO: float = 0.2
+    SAHI_OVERLAP_WIDTH_RATIO: float = 0.2
 
-        return logger
+    # YOLO Model
+    YOLO_MODELS_FOLDER_PATH: Path = ROOT_PATH / "models"
+    YOLO_LEAFS_MODEL_FOLDER: Path = YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_s_1"
+    YOLO_LEAFS_MODEL_NAME: str = "best.pt"
+    YOLO_DISEASE_MODEL_FOLDER: Path = YOLO_MODELS_FOLDER_PATH / "disease_model_s_1"
+    YOLO_DISEASE_MODEL_NAME: str = "best.pt"
+    YOLO_DEVICE: str = "cpu"
+    YOLO_IOU: float = .2
+    YOLO_CONF_THRESH: float = .2
+    YOLO_AUGMENT: bool = True
+    YOLO_AGNOSTIC_NMS: bool = True
 
-    logger = getLogger("middleware_logger")
+    # LOGGER
+    CLI_LOG_LEVEL: int = logging.INFO
+    FILE_LOG_LEVEL: int = logging.INFO
+    LOGS_PATH: Path = ROOT_PATH / "logs" / "logs.log"
 
-    if not logger.handlers:
-        logger = setup_logging()
-
-    logger.info("Loading models")
-    models = {
-        "model_s": LeafsDiseaseAnalyzer(
-            leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_s_1" / "best.pt",
-            disease_model_path=Config.YOLO_MODELS_FOLDER_PATH / "disease_model_s_1" / "best.pt",
-            device=Config.YOLO_DEVICE
-        ),
-        "model_m": LeafsDiseaseAnalyzer(
-                leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_m_1" / "best.pt",
-                disease_model_path=Config.YOLO_MODELS_FOLDER_PATH / "disease_model_s_1" / "best.pt",
-                device=Config.YOLO_DEVICE
-            ),
-        "model_s2": LeafsDiseaseAnalyzer(
-            leafs_model_path=Config.YOLO_MODELS_FOLDER_PATH / "leafs_model_s_1" / "best.pt",
-            disease_model_path=Config.YOLO_MODELS_FOLDER_PATH / "disease_model_s_2" / "best.pt",
-            device=Config.YOLO_DEVICE
-        )
-    }
-
-    # Starting api
-    logger.info("Starting api")
-    app = FastAPI(title="LeafsDiseaseAnalyzerApi")
-
-    # sth was fucked men with files input
-    from fastapi.openapi.utils import get_openapi
+    # API
+    API_PORT: int = 5000
+    API_HOST: str = "http://127.0.0.1"
+    API_HOST_NO_PROT: str = "127.0.0.1"
+    MAX_IMAGE_FILES: int = 5
+    API_LOG_FILE: str = Path(ROOT_PATH) / "logs" / "api_logs.log"
+    # API_MODELS_LIST_PATH: Union[str, os.PathLike, Path] = Path(ROOT_PATH) / "api" / "model_to_load.json"
+    API_MODEL_MIN_GEN_LEN: int = 1
+    API_MODEL_MAX_GEN_LEN: int = 32
+    API_MAX_FILE_NUMBER: int = 5
+    API_MAX_FILE_BYTES: int = 25 * 1024 * 1024
+    API_ALLOWED_EXTENSIONS: tuple[str] = ("image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp")
 
 
-    def custom_openapi():
-        if app.openapi_schema:
-            return app.openapi_schema
-
-        schema = get_openapi(
-            title=app.title,
-            version=app.version,
-            routes=app.routes,
-        )
-
-        for component in schema.get("components", {}).get("schemas", {}).values():
-            for prop in component.get("properties", {}).values():
-
-                # list[UploadFile]
-                if prop.get("type") == "array":
-                    items = prop.get("items", {})
-
-                    if items.get("contentMediaType") == "application/octet-stream":
-                        items.pop("contentMediaType", None)
-                        items["format"] = "binary"
-
-                # UploadFile
-                elif (
-                    prop.get("type") == "string"
-                    and prop.get("contentMediaType") == "application/octet-stream"
-                ):
-                    prop.pop("contentMediaType", None)
-                    prop["format"] = "binary"
-
-        app.openapi_schema = schema
-        return schema
-
-
-    app.openapi = custom_openapi
-
-    from api import routes
-    logger.info("Api initialized")
-except Exception as e:
-    logger.error(f"Error on init: {e}", exc_info=True)
-    raise e
+    # WEB APP
+    WEB_APP_PORT: int = 8000
+    WEB_APP_HOST: str = "127.0.0.1"
+    WEB_APP_DEBUG: bool = True
+    WEB_APP_LOG_FILE: str = Path(ROOT_PATH) / "logs" / "web_app.logs"
+    WEB_APP_TEMP_UPLOADS_FOLDER =  Path(ROOT_PATH) / "webapp" / "static" / "temp_uploads"
+    WEB_APP_FILES_LIFE_TIME: int = 60
+    WEB_APP_USE_SSL: bool = False
+    WEB_APP_SSL_FOLDER: str = f"{ROOT_PATH}/ocr_webapp/ssl_cert"
+    WEB_APP_TESTING: bool = False
+    WEB_APP_LOG_LEVEL: int = logging.DEBUG
+    WEB_API_CHECK_INTERVAL: int = 10
