@@ -1,7 +1,6 @@
 import logging
 from pathlib import Path
 
-#  $env:DATA_UPLOAD_MAX_NUMBER_FILES="10000" 
 
 class Config:
     # Overall
