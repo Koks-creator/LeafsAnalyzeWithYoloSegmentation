@@ -1,0 +1,57 @@
+{% macro field(f, cls="form-control") %}
+    <div class="field">
+        {{ f.label(class="form-label") }}
+        {{ f(class=cls ~ (" is-invalid" if f.errors else "")) }}
+        {% for error in f.errors %}
+            <div class="field-error">{{ error }}</div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro switch(f) %}
+    <div class="form-check form-switch">
+        {{ f(class="form-check-input", role="switch") }}
+        {{ f.label(class="form-check-label") }}
+    </div>
+    {% for error in f.errors %}
+        <div class="field-error">{{ error }}</div>
+    {% endfor %}
+{% endmacro %}
+
+{# ---------- YOLO AND SAHI SAR ---------- #}
+{% macro settings_group(title, hint, variant, yolo_fields, sahi_switch, sahi_fields) %}
+    {% set all_fields = yolo_fields + [sahi_switch] + sahi_fields %}
+    {% set has_errors = all_fields | selectattr('errors') | list | length > 0 %}
+
+    <details class="panel settings settings-{{ variant }}" {% if has_errors %}open{% endif %}>
+        <summary>
+            <span class="settings-mark" aria-hidden="true"></span>
+            <span class="settings-text">
+                <span class="settings-title">{{ title }}</span>
+                <span class="settings-hint">{{ hint }}</span>
+            </span>
+            {% if has_errors %}
+                <span class="settings-error">Check values</span>
+            {% endif %}
+        </summary>
+
+        <div class="settings-body">
+            <div class="subgroup">
+                <h3>YOLO</h3>
+                <div class="field-grid">
+                    {% for f in yolo_fields %}{{ field(f) }}{% endfor %}
+                </div>
+            </div>
+
+            <div class="subgroup">
+                <div class="subgroup-head">
+                    <h3>SAHI</h3>
+                    {{ switch(sahi_switch) }}
+                </div>
+                <div class="field-grid sahi-fields" data-sahi-toggle="{{ sahi_switch.id }}">
+                    {% for f in sahi_fields %}{{ field(f) }}{% endfor %}
+                </div>
+            </div>
+        </div>
+    </details>
+{% endmacro %}
