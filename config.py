@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+#  $env:DATA_UPLOAD_MAX_NUMBER_FILES="10000" 
 
 class Config:
     # Overall
@@ -21,8 +22,10 @@ class Config:
     # YOLO Model
     YOLO_MODELS_FOLDER_PATH: Path = ROOT_PATH / "models"
     YOLO_LEAFS_MODEL_FOLDER: Path = YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_s_1"
+    YOLO_LEAFS_MODEL_FOLDER_MEDIUM: Path = YOLO_MODELS_FOLDER_PATH / "leafs_model_agrobotanix_m_1"
     YOLO_LEAFS_MODEL_NAME: str = "best.pt"
     YOLO_DISEASE_MODEL_FOLDER: Path = YOLO_MODELS_FOLDER_PATH / "disease_model_s_1"
+    YOLO_DISEASE_MODEL_FOLDER_MEDIUM: Path = YOLO_MODELS_FOLDER_PATH / "disease_model_s_1"
     YOLO_DISEASE_MODEL_NAME: str = "best.pt"
     YOLO_DEVICE: str = "cpu"
     YOLO_IOU: float = .2
