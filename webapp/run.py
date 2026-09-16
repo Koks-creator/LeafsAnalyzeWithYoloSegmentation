@@ -1,10 +1,13 @@
+import ssl
 import sys
 from pathlib import Path
-import ssl
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from webapp import app
 from config import Config
+
+from webapp import app
+
 
 def run() -> None:
     if Config.WEB_APP_USE_SSL:
