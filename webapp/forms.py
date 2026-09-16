@@ -1,13 +1,15 @@
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
+from config import Config
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, MultipleFileField
 from wtforms import BooleanField, FloatField, IntegerField, SelectField, SubmitField
 from wtforms.validators import DataRequired, NumberRange, ValidationError
 
 available_models = [
-                    "model1"
+                    "model_s", "model_m", "model_s2"
                     ]
 
 
@@ -16,7 +18,7 @@ def max_files_count(max_count: int):
     def _max_files_count(form, field):
         # field.data to lista obiektów FileStorage
         if len(field.data) > max_count:
-            raise ValidationError(f"Możesz przesłać maksymalnie {max_count} plików.")
+            raise ValidationError(f"You can upload max {max_count} files.")
     return _max_files_count
 
 
@@ -24,7 +26,7 @@ class MainForm(FlaskForm):
     images_field = MultipleFileField("Upload files",
         validators=[DataRequired(),
                     FileAllowed(["jpg", "png", "jpeg"]),
-                    max_files_count(2) 
+                    max_files_count(Config.MAX_IMAGE_FILES) 
                     ]
         )
     filter_lt_px_field = IntegerField(
