@@ -4,7 +4,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import asyncio
 import base64
-import json
 from typing import Annotated
 
 import cv2
@@ -64,7 +63,7 @@ class DetectionConfigModel(BaseModel):
     yolo: YoloConfigModel = Field(default_factory=YoloConfigModel)
 
 class ProcessImageConfigModel(StrictModel):
-    model_pair_name: str = "model1"
+    model_pair_name: str = "model_s"
     pad: float = Field(0.06, ge=0.0, le=0.5)
     alpha: float = Field(0.5, ge=0.0, le=1.0)
     draw_color: tuple[Channel, Channel, Channel] = (200, 0, 50)
