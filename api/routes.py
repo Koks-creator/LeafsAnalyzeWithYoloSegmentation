@@ -29,7 +29,6 @@ from api import (
 Prob = Annotated[float, Field(ge=0.0, le=1.0)]
 Channel = Annotated[int, Field(ge=0, le=255)]
 
-
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
