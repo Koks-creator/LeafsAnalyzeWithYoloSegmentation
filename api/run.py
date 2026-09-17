@@ -12,7 +12,7 @@ def run_api() -> None:
     uvicorn.run(app, 
                 host=Config.API_HOST_NO_PROT, 
                 port=Config.API_PORT,
-                # log_config=Config().get_uvicorn_logger()
+                log_config=Config().get_uvicorn_logger()
             )
 
 if __name__ == "__main__":
