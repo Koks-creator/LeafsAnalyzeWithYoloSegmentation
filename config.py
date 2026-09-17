@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -31,6 +32,7 @@ class Config:
     YOLO_AGNOSTIC_NMS: bool = True
 
     # LOGGER
+    UVICORN_LOG_CONFIG_PATH: Path = Path(ROOT_PATH) / "api" / "uvicorn_log_config.json"
     CLI_LOG_LEVEL: int = logging.INFO
     FILE_LOG_LEVEL: int = logging.INFO
     LOGS_PATH: Path = ROOT_PATH / "logs" / "logs.log"
@@ -53,7 +55,7 @@ class Config:
     WEB_APP_PORT: int = 8000
     WEB_APP_HOST: str = "127.0.0.1"
     WEB_APP_DEBUG: bool = True
-    WEB_APP_LOG_FILE: str = Path(ROOT_PATH) / "logs" / "web_app.logs"
+    WEB_APP_LOG_FILE: str = Path(ROOT_PATH) / "logs" / "web_app.log"
     WEB_APP_TEMP_UPLOADS_FOLDER =  Path(ROOT_PATH) / "webapp" / "static" / "temp_uploads"
     WEB_APP_FILES_LIFE_TIME: int = 60
     WEB_APP_USE_SSL: bool = False
@@ -61,3 +63,9 @@ class Config:
     WEB_APP_TESTING: bool = False
     WEB_APP_LOG_LEVEL: int = logging.DEBUG
     WEB_API_CHECK_INTERVAL: int = 10
+
+    def get_uvicorn_logger(self) -> dict:
+        with open(self.UVICORN_LOG_CONFIG_PATH) as f:
+            log_config = json.load(f)
+            log_config["handlers"]["file_handler"]["filename"] =  Path(self.ROOT_PATH) / "logs" / "api_logs.log"
+            return log_config
